@@ -1,71 +1,61 @@
--- RistOs 0.1: resource dashboard and rendering profiles.
--- Compatible with the MineOS GUI/System APIs; changes persist in user settings.
-local GUI = require("GUI")
-local system = require("System")
-local screen = require("Screen")
+-- RistOS 0.2 / Control Center. MineOS-compatible GUI.
+local GUI, system, screen = require("GUI"), require("System"), require("Screen")
 local paths = require("Paths")
-local filesystem = require("Filesystem")
-
-local workspace, window = system.addWindow(GUI.filledWindow(1, 1, 70, 24, 0x192432))
-local bg = window.backgroundPanel
-local setting = system.getUserSettings()
-local white, muted, accent = 0xF0F0F0, 0xB6C6D8, 0x51B7FF
-
-window:addChild(GUI.text(3, 3, white, "RistOs 0.1 | Control Center"))
-window:addChild(GUI.text(3, 5, muted, "Graphics profile / Profil grafiki"))
-
-local details = window:addChild(GUI.object(3, 18, 60, 4))
-details.draw = function(object)
-  local mem = computer.totalMemory()
-  local free = computer.freeMemory()
-  local pct = math.floor(free * 100 / math.max(1, mem))
-  screen.drawText(object.x, object.y, muted,
-    "RAM free: " .. math.floor(free / 1024) .. " / " .. math.floor(mem / 1024) .. " KiB (" .. pct .. "%)")
-  screen.drawText(object.x, object.y + 1, muted,
-    "Wallpaper: " .. (setting.interfaceWallpaperEnabled and "on" or "off"))
-  screen.drawText(object.x, object.y + 2, muted,
-    "Double buffering: on | Network: " .. (setting.networkEnabled and "on" or "off"))
+local workspace, window = system.addWindow(GUI.filledWindow(1, 1, 76, 27, 0x171B24))
+local white, soft, blue, green = 0xE8EDF4, 0xAAB8CD, 0x65B6FF, 0x73DCA2
+local settings = system.getUserSettings()
+window:addChild(GUI.text(3, 3, white, "RistOS 0.2  /  CONTROL CENTER"))
+window:addChild(GUI.text(3, 5, soft, "Graphics profiles  -  optimized for 2048 KiB RAM"))
+local status = window:addChild(GUI.text(3, 17, blue, "Choose a profile"))
+local metrics = window:addChild(GUI.object(3, 19, 68, 5))
+metrics.draw = function(o)
+  local total, free = computer.totalMemory(), computer.freeMemory()
+  screen.drawText(o.x, o.y, soft, string.format("RAM: %d / %d KiB free", math.floor(free/1024), math.floor(total/1024)))
+  screen.drawText(o.x, o.y + 1, soft, "Effects: " .. (settings.interfaceTransparencyEnabled and "on" or "off") ..
+    "   Wallpaper: " .. (settings.interfaceWallpaperEnabled and "on" or "off"))
+  screen.drawText(o.x, o.y + 2, soft, "No BIOS / EEPROM changes are made from Control Center")
 end
-
-local info = window:addChild(GUI.text(3, 16, accent, "Select a profile."))
-local function setProfile(name)
-  setting.interfaceBlurEnabled = false
-  setting.interfaceTransparencyEnabled = false
-  setting.interfaceTransparencyDock = 0
-  setting.interfaceTransparencyMenu = 0
-  setting.interfaceTransparencyContextMenu = 0
+local function apply(name)
+  settings.interfaceBlurEnabled = false
+  settings.interfaceTransparencyEnabled = false
+  settings.interfaceTransparencyDock = 0
+  settings.interfaceTransparencyMenu = 0
+  settings.interfaceTransparencyContextMenu = 0
   if name == "ECO" then
-    setting.interfaceWallpaperEnabled = false
-  elseif name == "BALANCED" then
-    setting.interfaceWallpaperEnabled = true
-    setting.interfaceWallpaperPath = paths.system.wallpapers .. "Solid color.wlp/"
+    settings.interfaceWallpaperEnabled = false
   else
-    setting.interfaceWallpaperEnabled = true
-    setting.interfaceWallpaperPath = paths.system.wallpapers .. "Stars.wlp/"
-    setting.interfaceTransparencyEnabled = true
-    setting.interfaceTransparencyDock = 0.2
-    setting.interfaceTransparencyMenu = 0.15
-    setting.interfaceTransparencyContextMenu = 0.15
+    settings.interfaceWallpaperEnabled = true
+    settings.interfaceWallpaperPath = paths.system.wallpapers .. (name == "VISUAL" and "Stars.wlp/" or "Solid color.wlp/")
   end
   system.saveUserSettings()
   system.updateColorScheme()
   system.updateWallpaper()
-  info.text = "Active profile: " .. name .. " (saved)"
+  status.text = "Profile: " .. name .. " (saved)"
   workspace:draw()
 end
-
-local function addButton(x, y, name, description)
-  window:addChild(GUI.button(x, y, 18, 3, 0x25394D, white, 0x2563B0, white, name)).onTouch = function()
-    setProfile(name)
+for i, profile in ipairs({"ECO", "BALANCED", "VISUAL"}) do
+  local x = 3 + (i-1) * 24
+  window:addChild(GUI.button(x, 8, 21, 3, 0x293E53, white, 0x32649E, white, profile)).onTouch = function()
+    apply(profile)
   end
-  window:addChild(GUI.text(x, y + 4, muted, description))
 end
-
-addButton(3, 8, "ECO", "No animations")
-addButton(25, 8, "BALANCED", "Static desktop")
-addButton(47, 8, "VISUAL", "10 FPS wallpaper")
-
-window.onResize = function(width, height)
-  bg.width, bg.height = width, height
+local function openApp(path)
+  if require("Filesystem").exists(path) then
+    system.execute(path)
+  else
+    GUI.alert("Application is not installed: " .. path)
+  end
+end
+window:addChild(GUI.button(3, 13, 32, 3, 0x244E48, white, 0x347765, white, "Rist Article AI")).onTouch = function()
+  openApp("/Applications/Rist Article AI.app/Main.lua")
+end
+window:addChild(GUI.button(39, 13, 32, 3, 0x293E53, white, 0x32649E, white, "Rist Update")).onTouch = function()
+  openApp("/Applications/Rist Update.app/Main.lua")
+end
+window:addChild(GUI.button(3, 24, 21, 2, 0x293E53, white, 0x32649E, white, "Refresh RAM")).onTouch = function()
+  workspace:draw()
+end
+window.onResize = function(w, h)
+  window.backgroundPanel.width, window.backgroundPanel.height = w, h
 end
 workspace:draw()
