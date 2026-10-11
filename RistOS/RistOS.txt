@@ -1,0 +1,4 @@
+RistOs 0.1.0
+MineOS-compatible OpenComputers distribution.
+Rendering: 1 Hz static, <=10 Hz animated wallpaper.
+See README_RU.md and LICENSE_MINEOS.txt.
