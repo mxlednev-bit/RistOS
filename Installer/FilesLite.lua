@@ -91,7 +91,7 @@ return {
   { "Libraries/Screen.lua", 29109 },
   { "Libraries/System.lua", 92061 },
   { "Libraries/Text.lua", 5599 },
-  { "Libraries/Vector.lua", 2077 },
+  { "Libraries/Vector.lua", 2006 },
   { "Localizations/English.lang", 3775 },
   { "Localizations/Russian.lang", 5616 },
   { "OS.lua", 6743 },

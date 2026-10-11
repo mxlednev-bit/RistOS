@@ -1,0 +1,9 @@
+# RistOS: stable bytes on GitHub and jsDelivr (used by installation manifests)
+*.lua text eol=lf
+*.lang text eol=lf
+*.cfg text eol=lf
+*.txt text eol=lf
+*.md text eol=lf
+*.lnk text eol=lf
+*.pic -text
+*.3dm -text
